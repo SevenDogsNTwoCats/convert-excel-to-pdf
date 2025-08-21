@@ -13,7 +13,11 @@ import { decodeCell } from "./utils/decodeCell.js";
  * @param {string} outputFileName Name of the output PDF file.
  * @param {boolean} enablePagination Whether to enable pagination (default: false)
  */
-export async function convertExcelToPdf(inputFilePath, outputFileName, enablePagination = false) {
+export async function convertExcelToPdf(
+  inputFilePath,
+  outputFileName,
+  enablePagination = false
+) {
   // Check if file exists
   if (!fs.existsSync(inputFilePath)) {
     throw new Error(`Error: The file "${inputFilePath}" was not found.`);
@@ -163,7 +167,13 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
     });
 
     // Generate PDF with dynamic size
-    const doc = new PDFDocument({ size: enablePagination ? 'letter' : [pageWidth, pageHeight], margin });
+    const doc = new PDFDocument({
+      size: enablePagination ? "letter" : [pageWidth, pageHeight],
+      margin,
+    });
+    doc.font("Helvetica");
+    doc.font("Helvetica-Bold");
+    doc.font("Helvetica-Oblique");
     doc.pipe(fs.createWriteStream(outputFileName));
 
     // Draw images first

@@ -247,7 +247,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
             doc.font("Helvetica").fontSize(12).fillColor("black");
           }
           const fontSize = cell.style.font?.size || 12; // Obtén el tamaño de la fuente o usa el valor predeterminado
-          const dynamicYOffset = (mergedHeight - fontSize) / 2 + 2; // Centra el texto verticalmente en la celda mergeada
+          const dynamicYOffset = (mergedHeight - fontSize) / 2; // Centra el texto verticalmente en la celda mergeada
 
           // Ajusta la posición vertical del texto usando dynamicYOffset
           doc.text(cell.text, x + 2, y  + dynamicYOffset, {
@@ -286,7 +286,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
             doc.font("Helvetica").fontSize(12).fillColor("black");
           }
           const fontSize = cell.style.font?.size || 12; // Obtén el tamaño de la fuente o usa el valor predeterminado
-          const dynamicYOffset = fontSize * 1/2 + 5; // Calcula un desplazamiento dinámico basado en el tamaño de la fuente
+          const dynamicYOffset = fontSize * 1/2; // Calcula un desplazamiento dinámico basado en el tamaño de la fuente
 
           // Ajusta la posición vertical del texto usando dynamicYOffset
           doc.text(cell.text, x + 2, y + dynamicYOffset, {

@@ -4,13 +4,15 @@ import ExcelJS from "exceljs";
 import fs from "fs";
 import PDFDocument from "pdfkit";
 import { drawBorders } from "./utils/draw-borders.js";
+import { encodeCell } from "./encodeCell.js";
+import { decodeCell } from "./decodeCell.js";
 
 /**
  * Convierte un archivo de Excel a un documento PDF.
  * @param {string} inputFilePath La ruta al archivo Excel de entrada.
  * @param {string} outputFileName El nombre del archivo PDF de salida.
  */
-export async function convertExcelToPdf(inputFilePath, outputFileName) {
+export async function convertExcelToPdf(inputFilePath, outputFileName, enablePagination = false) {
   // Verifica si el archivo existe
   if (!fs.existsSync(inputFilePath)) {
     throw new Error(`Error: El archivo "${inputFilePath}" no se encontró.`);
@@ -23,37 +25,9 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
     // Lee el archivo de Excel de forma asíncrona
     await workbook.xlsx.readFile(inputFilePath);
 
-    // Obtiene la primera hoja de trabajo por su índice (es 1-based, no 0-based)
     const worksheet = workbook.getWorksheet(1);
 
-    // Función para decodificar referencias tipo 'A1' a { row, col }
-    function decodeCell(ref) {
-      const match = ref.match(/^([A-Z]+)(\d+)$/);
-      if (!match) {
-        throw new Error(`Referencia de celda inválida: ${ref}`);
-      }
-      const colLetters = match[1];
-      const row = parseInt(match[2], 10);
-      // Convierte letras de columna a número
-      let col = 0;
-      for (let i = 0; i < colLetters.length; i++) {
-        col *= 26;
-        col += colLetters.charCodeAt(i) - 64;
-      }
-      return { row, col };
-    }
-
-    function encodeCell(row, col) {
-      let colLetters = "";
-      while (col > 0) {
-        const remainder = (col - 1) % 26;
-        colLetters = String.fromCharCode(65 + remainder) + colLetters;
-        col = Math.floor((col - 1) / 26);
-      }
-      return `${colLetters}${row}`;
-    }
-
-    // Procesa los merges para marcar solo la celda principal y dejar las demás vacías
+    // Procesa los datos como antes...
     const styledRows = [];
     const totalRows = worksheet.rowCount;
     const totalCols = worksheet.columnCount;
@@ -188,7 +162,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
     });
 
     // Genera el PDF con tamaño dinámico
-    const doc = new PDFDocument({ size: [pageWidth, pageHeight], margin });
+    const doc = new PDFDocument({ size: enablePagination ? 'letter' : [pageWidth, pageHeight], margin });
     doc.pipe(fs.createWriteStream(outputFileName));
 
     // Dibuja imágenes primero
@@ -212,6 +186,12 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
 
     styledRows.forEach((row, rowIdx) => {
       let x = startX; // Asegurar que x esté inicializado antes de su uso
+      // Verifica si el contenido excede la altura de la página
+      if (enablePagination && y + rowHeight > pageHeight - margin) {
+        doc.addPage(); // Agrega una nueva página
+        y = margin; // Reinicia la posición vertical
+      }
+
       row.forEach((cell, i) => {
         // Verificar si la celda es parte de un merge
         let isMerged = false;

@@ -170,10 +170,10 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
       });
     });
     const tableWidth = colWidths.reduce((sum, w) => sum + w, 0);
-    const tableHeight = totalRows * rowHeight;
+    const tableHeight = totalRows * rowHeight + 10;
     const margin = 50;
     const pageWidth = tableWidth + margin * 2;
-    const pageHeight = tableHeight + margin * 2;
+    const pageHeight = tableHeight + margin * 2 + 40;
 
     // Extrae imágenes del worksheet
     const images = [];

@@ -170,10 +170,22 @@ export async function convertExcelToPdf(
     const doc = new PDFDocument({
       size: enablePagination ? "letter" : [pageWidth, pageHeight],
       margin,
+      font: null,
     });
+    const fonts = {
+      Helvetica: {
+        normal: "Helvetica",
+        bold: "Helvetica-Bold",
+        italic: "Helvetica-Oblique",
+        bolditalic: "Helvetica-BoldOblique",
+      },
+    };
+    doc.registerFont("Helvetica", fonts.Helvetica.normal);
+    doc.registerFont("Helvetica-Bold", fonts.Helvetica.bold);
+    doc.registerFont("Helvetica-Oblique", fonts.Helvetica.italic);
+    doc.registerFont("Helvetica-BoldOblique", fonts.Helvetica.bolditalic);
     doc.font("Helvetica");
-    doc.font("Helvetica-Bold");
-    doc.font("Helvetica-Oblique");
+    
     doc.pipe(fs.createWriteStream(outputFileName));
 
     // Draw images first

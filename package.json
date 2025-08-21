@@ -5,16 +5,24 @@
   "main": "src/lib/excel-to-pdf.js",
   "keywords": [
     "excel",
-    "pdf",
+    "pdf", 
     "converter",
     "xlsx",
     "library",
     "exceljs",
     "pdfkit"
   ],
-  "author": "",
+  "author": "AlhEspinal alh9cef@gmail.com",
   "license": "ISC",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SevenDogsNTwoCats/convert-excel-to-pdf.git"
+  },
+  "files": [
+    "src/",
+    "README.md"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

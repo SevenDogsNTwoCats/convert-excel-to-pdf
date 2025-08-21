@@ -1,0 +1,25 @@
+{
+  "name": "excel-to-pdf-converter",
+  "version": "1.0.0",
+  "description": "Convert you xlsx to pdf",
+  "main": "src/lib/excel-to-pdf.js",
+  "keywords": [
+    "excel",
+    "pdf",
+    "converter",
+    "xlsx",
+    "library",
+    "exceljs",
+    "pdfkit"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.14.0"
+  }
+}

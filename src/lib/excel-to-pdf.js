@@ -133,17 +133,40 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
     styledRows.forEach((row) => {
       row.forEach((cell, idx) => {
         if (cell.isSecondaryMergeCell) {
-          return;
+          return; // Ignorar celdas secundarias de un merge
         }
+
         const text = cell.text || "";
         const size = cell.style.font?.size || defaultFontSize;
         let font = "Helvetica";
         if (cell.style.font?.bold) font = "Helvetica-Bold";
         else if (cell.style.font?.italic) font = "Helvetica-Oblique";
         tempDoc.font(font).fontSize(size);
-        const w = tempDoc.widthOfString(text);
-        if (w + padding + extraSpace > colWidths[idx])
-          colWidths[idx] = w + padding + extraSpace;
+        const textWidth = tempDoc.widthOfString(text) + padding + extraSpace;
+
+        if (cell.mergeInfo) {
+          // Si la celda es parte de un merge, calcular el ancho total de las columnas mergeadas
+          const { startCol, endCol } = cell.mergeInfo;
+          const mergedWidth = colWidths
+            .slice(startCol - 1, endCol)
+            .reduce((sum, w) => sum + w, 0);
+
+          // Si el ancho total de las columnas mergeadas es menor que el ancho necesario para el texto, ajustar
+          if (mergedWidth < textWidth) {
+            const extraWidth = textWidth - mergedWidth;
+            const numCols = endCol - startCol + 1;
+            const additionalWidthPerCol = extraWidth / numCols;
+
+            for (let i = startCol - 1; i < endCol; i++) {
+              colWidths[i] += additionalWidthPerCol;
+            }
+          }
+        } else {
+          // Si no es una celda mergeada, ajustar el ancho de la columna individual
+          if (textWidth > colWidths[idx]) {
+            colWidths[idx] = textWidth;
+          }
+        }
       });
     });
     const tableWidth = colWidths.reduce((sum, w) => sum + w, 0);
@@ -223,6 +246,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
           const mergedWidth = colWidths
             .slice(i, i + mergeCols)
             .reduce((sum, w) => sum + w, 0);
+          // const mergedWidth = colWidths[i] || 10 * 6 + padding;
           const mergedHeight = rowHeight * mergeRows;
 
           // Fondo
@@ -246,20 +270,22 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
           } else {
             doc.font("Helvetica").fontSize(12).fillColor("black");
           }
-          const fontSize = cell.style.font?.size || 12; // Obtén el tamaño de la fuente o usa el valor predeterminado
-          const dynamicYOffset = (mergedHeight - fontSize) / 2; // Centra el texto verticalmente en la celda mergeada
+          const fontSize = cell.style.font?.size || 12;
+          const dynamicYOffset = (mergedHeight - fontSize) / 2;
 
           // Ajusta la posición vertical del texto usando dynamicYOffset
-          doc.text(cell.text, x + 2, y  + dynamicYOffset, {
+          doc.text(cell.text, x + 2, y + dynamicYOffset, {
             width: mergedWidth - 4,
             align: cell.style.alignment?.horizontal || "left",
-            ellipsis: true,
+            // ellipsis: true,
           });
 
           // Bordes
           const borders = cell.style.border || {};
           drawBorders(doc, x, y, mergedWidth, mergedHeight, borders);
-          x += mergedWidth;
+
+          // Actualiza x correctamente para que las celdas colinden
+          x += colWidths[i] || 10 * 6 + padding; // Incrementa x por el ancho total de la celda mergeada
         } else {
           // Celda normal (no mergeada)
           const cellWidth = colWidths[i] || 10 * 6 + padding;
@@ -285,8 +311,8 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
           } else {
             doc.font("Helvetica").fontSize(12).fillColor("black");
           }
-          const fontSize = cell.style.font?.size || 12; // Obtén el tamaño de la fuente o usa el valor predeterminado
-          const dynamicYOffset = fontSize * 1/2; // Calcula un desplazamiento dinámico basado en el tamaño de la fuente
+          const fontSize = cell.style.font?.size || 12;
+          const dynamicYOffset = (fontSize * 1) / 2;
 
           // Ajusta la posición vertical del texto usando dynamicYOffset
           doc.text(cell.text, x + 2, y + dynamicYOffset, {
@@ -298,7 +324,9 @@ export async function convertExcelToPdf(inputFilePath, outputFileName) {
           // Bordes
           const borders = cell.style.border || {};
           drawBorders(doc, x, y, cellWidth, rowHeight, borders);
-          x += cellWidth;
+
+          // Actualiza x correctamente para que las celdas colinden
+          x += cellWidth; // Incrementa x por el ancho total de la celda normal
         }
       });
       y += rowHeight;

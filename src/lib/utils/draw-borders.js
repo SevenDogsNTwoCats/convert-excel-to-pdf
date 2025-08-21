@@ -1,4 +1,12 @@
-// Refine drawBorders function to ensure accurate border rendering
+/**
+ * Draws borders around a cell in a PDF document
+ * @param {PDFDocument} doc - The PDF document instance
+ * @param {number} x - The x coordinate of the cell
+ * @param {number} y - The y coordinate of the cell
+ * @param {number} width - The width of the cell
+ * @param {number} height - The height of the cell
+ * @param {Object} borders - The border styles object containing top, left, bottom, right properties
+ */
 export function drawBorders(doc, x, y, width, height, borders) {
   if (!borders) return;
 

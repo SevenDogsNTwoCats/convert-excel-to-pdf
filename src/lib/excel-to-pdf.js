@@ -4,34 +4,35 @@ import ExcelJS from "exceljs";
 import fs from "fs";
 import PDFDocument from "pdfkit";
 import { drawBorders } from "./utils/draw-borders.js";
-import { encodeCell } from "./encodeCell.js";
-import { decodeCell } from "./decodeCell.js";
+import { encodeCell } from "./utils/encodeCell.js";
+import { decodeCell } from "./utils/decodeCell.js";
 
 /**
- * Convierte un archivo de Excel a un documento PDF.
- * @param {string} inputFilePath La ruta al archivo Excel de entrada.
- * @param {string} outputFileName El nombre del archivo PDF de salida.
+ * Converts an Excel file to a PDF document.
+ * @param {string} inputFilePath Path to the input Excel file.
+ * @param {string} outputFileName Name of the output PDF file.
+ * @param {boolean} enablePagination Whether to enable pagination (default: false)
  */
 export async function convertExcelToPdf(inputFilePath, outputFileName, enablePagination = false) {
-  // Verifica si el archivo existe
+  // Check if file exists
   if (!fs.existsSync(inputFilePath)) {
-    throw new Error(`Error: El archivo "${inputFilePath}" no se encontró.`);
+    throw new Error(`Error: The file "${inputFilePath}" was not found.`);
   }
 
-  // Crea una instancia de Workbook
+  // Create Workbook instance
   const workbook = new ExcelJS.Workbook();
 
   try {
-    // Lee el archivo de Excel de forma asíncrona
+    // Read Excel file asynchronously
     await workbook.xlsx.readFile(inputFilePath);
 
     const worksheet = workbook.getWorksheet(1);
 
-    // Procesa los datos como antes...
+    // Process data as before
     const styledRows = [];
     const totalRows = worksheet.rowCount;
     const totalCols = worksheet.columnCount;
-    // Construye un mapa de merges: { 'row-col': { range, startRow, startCol, endRow, endCol } }
+    // Build merge map: { 'row-col': { range, startRow, startCol, endRow, endCol } }
     const mergeMap = {};
     if (worksheet._merges) {
       Object.entries(worksheet._merges).forEach(([key, merge]) => {
@@ -49,19 +50,19 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
         }
       });
     }
-    // Solo agregar la celda principal del merge y saltar las secundarias
+    // Only add main cell of merge and skip secondary cells
     for (let rowNumber = 1; rowNumber <= totalRows; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const cells = [];
       for (let colNumber = 1; colNumber <= totalCols; colNumber++) {
         const key = `${rowNumber}-${colNumber}`;
-        // Si la celda es parte de un merge y no es la principal, saltar
+        // If cell is part of a merge and not the main one, skip it
         if (
           mergeMap[key] &&
           (rowNumber !== mergeMap[key].startRow ||
             colNumber !== mergeMap[key].startCol)
         ) {
-          // Asegurarse de que las celdas secundarias de un merge estén vacías
+          // Ensure secondary merge cells are empty
           cells.push({
             text: "",
             style: {},
@@ -70,7 +71,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
           });
           continue;
         }
-        // Solo procesar la celda principal del merge
+        // Only process the main cell of the merge
         let cell = row.getCell(colNumber);
         let text =
           cell.value != null
@@ -88,14 +89,14 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
       styledRows.push(cells);
     }
 
-    // Ajustar referencias antes de llamar a decodeCell
+    // Adjust references before calling decodeCell
     Object.entries(mergeMap).forEach(([key, mergeInfo]) => {
       const startCell = encodeCell(mergeInfo.startRow, mergeInfo.startCol);
       const endCell = encodeCell(mergeInfo.endRow, mergeInfo.endCol);
       mergeInfo.range = `${startCell}:${endCell}`;
     });
 
-    // Calcula dimensiones dinámicas de la tabla y la página
+    // Calculate dynamic table and page dimensions
     const defaultFontSize = 12;
     const rowHeight = 20;
     const tempDoc = new PDFDocument({ margin: 0 });
@@ -103,11 +104,11 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
     const extraSpace = 10;
     const colWidths = Array(totalCols).fill(padding);
 
-    // Calcula el ancho de columnas considerando todas las filas, incluyendo el header
+    // Calculate column widths considering all rows, including the header
     styledRows.forEach((row) => {
       row.forEach((cell, idx) => {
         if (cell.isSecondaryMergeCell) {
-          return; // Ignorar celdas secundarias de un merge
+          return; // Ignore secondary merge cells
         }
 
         const text = cell.text || "";
@@ -119,13 +120,13 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
         const textWidth = tempDoc.widthOfString(text) + padding + extraSpace;
 
         if (cell.mergeInfo) {
-          // Si la celda es parte de un merge, calcular el ancho total de las columnas mergeadas
+          // If cell is part of a merge, calculate total width of merged columns
           const { startCol, endCol } = cell.mergeInfo;
           const mergedWidth = colWidths
             .slice(startCol - 1, endCol)
             .reduce((sum, w) => sum + w, 0);
 
-          // Si el ancho total de las columnas mergeadas es menor que el ancho necesario para el texto, ajustar
+          // If total width of merged columns is less than required for the text, adjust it
           if (mergedWidth < textWidth) {
             const extraWidth = textWidth - mergedWidth;
             const numCols = endCol - startCol + 1;
@@ -136,7 +137,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
             }
           }
         } else {
-          // Si no es una celda mergeada, ajustar el ancho de la columna individual
+          // If not a merged cell, adjust the width of the individual column
           if (textWidth > colWidths[idx]) {
             colWidths[idx] = textWidth;
           }
@@ -149,7 +150,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
     const pageWidth = tableWidth + margin * 2;
     const pageHeight = tableHeight + margin * 2 + 40;
 
-    // Extrae imágenes del worksheet
+    // Extract images from worksheet
     const images = [];
     worksheet.getImages().forEach((img) => {
       const range = img.range;
@@ -161,11 +162,11 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
       images.push({ buffer: media.buffer, ext, tl });
     });
 
-    // Genera el PDF con tamaño dinámico
+    // Generate PDF with dynamic size
     const doc = new PDFDocument({ size: enablePagination ? 'letter' : [pageWidth, pageHeight], margin });
     doc.pipe(fs.createWriteStream(outputFileName));
 
-    // Dibuja imágenes primero
+    // Draw images first
     images.forEach(({ tl, ext, buffer }) => {
       const colIndex = tl.nativeCol || 0;
       const rowIndex = tl.nativeRow || 0;
@@ -184,23 +185,24 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
     let y = margin;
     const startX = margin;
 
+    // Process all rows
     styledRows.forEach((row, rowIdx) => {
-      let x = startX; // Asegurar que x esté inicializado antes de su uso
-      // Verifica si el contenido excede la altura de la página
+      let x = startX; // Ensure x is initialized before use
+      // Check if content exceeds page height
       if (enablePagination && y + rowHeight > pageHeight - margin) {
-        doc.addPage(); // Agrega una nueva página
-        y = margin; // Reinicia la posición vertical
+        doc.addPage(); // Add new page
+        y = margin; // Reset vertical position
       }
 
       row.forEach((cell, i) => {
-        // Verificar si la celda es parte de un merge
+        // Check if cell is part of a merge
         let isMerged = false;
         let isMainMergeCell = false;
         let mergeCols = 1;
         let mergeRows = 1;
 
         if (cell.mergeInfo) {
-          // Calcular el rango del merge
+          // Calculate merge range
           const [start, end] = cell.mergeInfo.range.split(":");
           const startCell = decodeCell(start);
           const endCell = decodeCell(end);
@@ -208,28 +210,28 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
           mergeRows = endCell.row - startCell.row + 1;
           isMerged = true;
 
-          // Solo dibujar si estamos en la celda principal del merge (top-left)
+          // Only draw if we are in the main cell of the merge (top-left)
           if (rowIdx + 1 === startCell.row && i + 1 === startCell.col) {
             isMainMergeCell = true;
           }
         }
 
-        // Si es una celda mergeada pero no es la principal, saltar sin dibujar
+        // If it's a merged cell but not the main one, skip drawing
         if (isMerged && !isMainMergeCell) {
           x += colWidths[i] || 10 * 6 + padding;
           return;
         }
 
-        // Dibujar la celda (mergeada o normal)
+        // Draw cell (merged or normal)
         if (isMerged && isMainMergeCell) {
-          // Celda mergeada - calcular dimensiones combinadas
+          // Merged cell - calculate combined dimensions
           const mergedWidth = colWidths
             .slice(i, i + mergeCols)
             .reduce((sum, w) => sum + w, 0);
           // const mergedWidth = colWidths[i] || 10 * 6 + padding;
           const mergedHeight = rowHeight * mergeRows;
 
-          // Fondo
+          // Background
           if (
             cell.style.fill &&
             cell.style.fill.fgColor &&
@@ -239,7 +241,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
             doc.rect(x, y, mergedWidth, mergedHeight).fill(`#${hex}`);
           }
 
-          // Fuente y texto
+          // Font and text
           if (cell.style.font) {
             const { size, color, bold, italic } = cell.style.font;
             if (size) doc.fontSize(size);
@@ -253,24 +255,24 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
           const fontSize = cell.style.font?.size || 12;
           const dynamicYOffset = (mergedHeight - fontSize) / 2;
 
-          // Ajusta la posición vertical del texto usando dynamicYOffset
+          // Adjust vertical position of text using dynamicYOffset
           doc.text(cell.text, x + 2, y + dynamicYOffset, {
             width: mergedWidth - 4,
             align: cell.style.alignment?.horizontal || "left",
             // ellipsis: true,
           });
 
-          // Bordes
+          // Borders
           const borders = cell.style.border || {};
           drawBorders(doc, x, y, mergedWidth, mergedHeight, borders);
 
-          // Actualiza x correctamente para que las celdas colinden
-          x += colWidths[i] || 10 * 6 + padding; // Incrementa x por el ancho total de la celda mergeada
+          // Update x correctly so cells align
+          x += colWidths[i] || 10 * 6 + padding; // Increment x by total width of merged cell
         } else {
-          // Celda normal (no mergeada)
+          // Normal cell (not merged)
           const cellWidth = colWidths[i] || 10 * 6 + padding;
 
-          // Fondo
+          // Background
           if (
             cell.style.fill &&
             cell.style.fill.fgColor &&
@@ -280,7 +282,7 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
             doc.rect(x, y, cellWidth, rowHeight).fill(`#${hex}`);
           }
 
-          // Fuente y texto
+          // Font and text
           if (cell.style.font) {
             const { size, color, bold, italic } = cell.style.font;
             if (size) doc.fontSize(size);
@@ -294,19 +296,19 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
           const fontSize = cell.style.font?.size || 12;
           const dynamicYOffset = (fontSize * 1) / 2;
 
-          // Ajusta la posición vertical del texto usando dynamicYOffset
+          // Adjust vertical position of text using dynamicYOffset
           doc.text(cell.text, x + 2, y + dynamicYOffset, {
             width: cellWidth - 4,
             align: cell.style.alignment?.horizontal || "left",
             ellipsis: true,
           });
 
-          // Bordes
+          // Borders
           const borders = cell.style.border || {};
           drawBorders(doc, x, y, cellWidth, rowHeight, borders);
 
-          // Actualiza x correctamente para que las celdas colinden
-          x += cellWidth; // Incrementa x por el ancho total de la celda normal
+          // Update x correctly so cells align
+          x += cellWidth; // Increment x by total width of normal cell
         }
       });
       y += rowHeight;
@@ -314,6 +316,6 @@ export async function convertExcelToPdf(inputFilePath, outputFileName, enablePag
 
     doc.end();
   } catch (error) {
-    throw new Error(`Error al procesar el archivo Excel: ${error.message}`);
+    throw new Error(`Error processing Excel file: ${error.message}`);
   }
 }

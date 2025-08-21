@@ -1,27 +1,49 @@
 # excel-to-pdf-converter
 
-Convierte archivos Excel (.xlsx) a PDF fácilmente.
+Convert Excel files (.xlsx) to PDF easily with style preservation.
 
-## Instalación
+## Installation
 
-```
+```bash
 npm install excel-to-pdf-converter
 ```
 
-## Uso
+## Usage
 
-```js
+```javascript
 import { convertExcelToPdf } from 'excel-to-pdf-converter';
 
-await convertExcelToPdf('ruta/al/archivo.xlsx', 'ruta/salida.pdf');
+await convertExcelToPdf('path/to/file.xlsx', 'path/to/output.pdf');
 ```
+
+## Features
+
+- Preserves cell styles (fonts, colors, borders)
+- Supports merged cells
+- Maintains text alignment
+- Handles background colors
+- Supports custom cell borders
 
 ## API
 
 ### convertExcelToPdf(inputFilePath, outputFileName)
-Convierte un archivo Excel (.xlsx) en un PDF.
-- `inputFilePath`: Ruta al archivo Excel de entrada.
-- `outputFileName`: Ruta y nombre del archivo PDF de salida.
+Converts an Excel file (.xlsx) to PDF.
+- `inputFilePath`: Path to the input Excel file
+- `outputFileName`: Path and name for the output PDF file
 
-## Licencia
+## Examples
+
+```javascript
+// Basic usage
+await convertExcelToPdf('input.xlsx', 'output.pdf');
+
+// With custom path
+await convertExcelToPdf('./documents/spreadsheet.xlsx', './exports/report.pdf');
+```
+
+## Requirements
+- Node.js 12 or higher
+- NPM or Yarn
+
+## License
 ISC

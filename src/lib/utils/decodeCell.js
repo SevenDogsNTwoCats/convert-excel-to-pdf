@@ -1,8 +1,13 @@
-// Función para decodificar referencias tipo 'A1' a { row, col }
+/**
+ * Decodes Excel-style cell references (e.g. 'A1') to row and column numbers
+ * @param {string} ref - The cell reference (e.g. 'A1', 'B2', etc.)
+ * @returns {Object} An object containing row and column numbers
+ * @throws {Error} If the cell reference is invalid
+ */
 export function decodeCell(ref) {
   const match = ref.match(/^([A-Z]+)(\d+)$/);
   if (!match) {
-    throw new Error(`Referencia de celda inválida: ${ref}`);
+    throw new Error(`Invalid cell reference: ${ref}`);
   }
   const colLetters = match[1];
   const row = parseInt(match[2], 10);

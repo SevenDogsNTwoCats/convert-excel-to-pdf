@@ -122,12 +122,10 @@ export async function convertExcelToPdf(
     const extraSpace = 10;
     const colWidths = Array(totalCols).fill(padding);
 
-    if (fs.existsSync(fonts.OpenSans.normal)) {
-      tempDoc.registerFont("OpenSans", fonts.OpenSans.normal);
-      tempDoc.registerFont("OpenSans-Bold", fonts.OpenSans.bold);
-      tempDoc.registerFont("OpenSans-Italic", fonts.OpenSans.italic);
-      tempDoc.registerFont("OpenSans-BoldItalic", fonts.OpenSans.bolditalic);
-    }
+    tempDoc.registerFont("Helvetica", fonts.OpenSans.normal);
+    tempDoc.registerFont("Helvetica-Bold", fonts.OpenSans.bold);
+    tempDoc.registerFont("Helvetica-Oblique", fonts.OpenSans.italic);
+    tempDoc.registerFont("Helvetica-BoldOblique", fonts.OpenSans.bolditalic);
 
     // Calculate column widths considering all rows, including the header
     styledRows.forEach((row) => {
@@ -138,9 +136,9 @@ export async function convertExcelToPdf(
 
         const text = cell.text || "";
         const size = cell.style.font?.size || defaultFontSize;
-        let font = "OpenSans";
-        if (cell.style.font?.bold) font = "OpenSans-Bold";
-        else if (cell.style.font?.italic) font = "OpenSans-Italic";
+        let font = "Helvetica";
+        if (cell.style.font?.bold) font = "Helvetica-Bold";
+        else if (cell.style.font?.italic) font = "Helvetica-Oblique";
         tempDoc.font(font).fontSize(size);
         const textWidth = tempDoc.widthOfString(text) + padding + extraSpace;
 
@@ -193,12 +191,10 @@ export async function convertExcelToPdf(
       margin,
     });
 
-    if (fs.existsSync(fonts.OpenSans.normal)) {
-      doc.registerFont("OpenSans", fonts.OpenSans.normal);
-      doc.registerFont("OpenSans-Bold", fonts.OpenSans.bold);
-      doc.registerFont("OpenSans-Italic", fonts.OpenSans.italic);
-      doc.registerFont("OpenSans-BoldItalic", fonts.OpenSans.bolditalic);
-    }
+    doc.registerFont("Helvetica", fonts.OpenSans.normal);
+    doc.registerFont("Helvetica-Bold", fonts.OpenSans.bold);
+    doc.registerFont("Helvetica-Oblique", fonts.OpenSans.italic);
+    doc.registerFont("Helvetica-BoldOblique", fonts.OpenSans.bolditalic);
 
     doc.pipe(fs.createWriteStream(outputFileName));
 
@@ -281,12 +277,12 @@ export async function convertExcelToPdf(
           if (cell.style.font) {
             const { size, color, bold, italic } = cell.style.font;
             if (size) doc.fontSize(size);
-            if (bold) doc.font("OpenSans-Bold");
-            if (italic) doc.font("OpenSans-Italic");
+            if (bold) doc.font("Helvetica-Bold");
+            if (italic) doc.font("Helvetica-Oblique");
             if (color && color.argb) doc.fillColor(`#${color.argb.slice(2)}`);
             else doc.fillColor("black");
           } else {
-            doc.font("OpenSans").fontSize(11).fillColor("black");
+            doc.font("Helvetica").fontSize(11).fillColor("black");
           }
           const fontSize = cell.style.font?.size || 11;
           const dynamicYOffset = (mergedHeight - fontSize - 10) / 2;
@@ -322,12 +318,12 @@ export async function convertExcelToPdf(
           if (cell.style.font) {
             const { size, color, bold, italic } = cell.style.font;
             if (size) doc.fontSize(size);
-            if (bold) doc.font("OpenSans-Bold");
-            if (italic) doc.font("OpenSans-Italic");
+            if (bold) doc.font("Helvetica-Bold");
+            if (italic) doc.font("Helvetica-Oblique");
             if (color && color.argb) doc.fillColor(`#${color.argb.slice(2)}`);
             else doc.fillColor("black");
           } else {
-            doc.font("OpenSans").fontSize(11).fillColor("black");
+            doc.font("Helvetica").fontSize(11).fillColor("black");
           }
           const fontSize = cell.style.font?.size || 11;
           const dynamicYOffset = (fontSize * 1) / 2;

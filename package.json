@@ -1,6 +1,6 @@
 {
   "name": "excel-to-pdf-converter",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Convert you xlsx to pdf",
   "main": "src/lib/excel-to-pdf.js",
   "types": "src/types/index.d.ts",
@@ -11,7 +11,7 @@
     "xlsx",
     "library",
     "exceljs",
-    "pdfkit"
+    "jspdf"
   ],
   "author": "AlhEspinal alh9cef@gmail.com",
   "license": "ISC",

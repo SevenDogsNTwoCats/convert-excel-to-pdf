@@ -6,6 +6,20 @@ import PDFDocument from "pdfkit";
 import { drawBorders } from "./utils/draw-borders.js";
 import { encodeCell } from "./utils/encodeCell.js";
 import { decodeCell } from "./utils/decodeCell.js";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const fonts = {
+  OpenSans: {
+    normal: join(__dirname, "./fonts/OpenSans-Regular.ttf"),
+    bold: join(__dirname, "./fonts/OpenSans-Bold.ttf"),
+    italic: join(__dirname, "./fonts/OpenSans-Italic.ttf"),
+    bolditalic: join(__dirname, "./fonts/OpenSans-BoldItalic.ttf"),
+  },
+};
 
 /**
  * Converts an Excel file to a PDF document.
@@ -108,6 +122,13 @@ export async function convertExcelToPdf(
     const extraSpace = 10;
     const colWidths = Array(totalCols).fill(padding);
 
+    if (fs.existsSync(fonts.OpenSans.normal)) {
+      tempDoc.registerFont("OpenSans", fonts.OpenSans.normal);
+      tempDoc.registerFont("OpenSans-Bold", fonts.OpenSans.bold);
+      tempDoc.registerFont("OpenSans-Italic", fonts.OpenSans.italic);
+      tempDoc.registerFont("OpenSans-BoldItalic", fonts.OpenSans.bolditalic);
+    }
+
     // Calculate column widths considering all rows, including the header
     styledRows.forEach((row) => {
       row.forEach((cell, idx) => {
@@ -117,9 +138,9 @@ export async function convertExcelToPdf(
 
         const text = cell.text || "";
         const size = cell.style.font?.size || defaultFontSize;
-        let font = "Helvetica";
-        if (cell.style.font?.bold) font = "Helvetica-Bold";
-        else if (cell.style.font?.italic) font = "Helvetica-Oblique";
+        let font = "OpenSans";
+        if (cell.style.font?.bold) font = "OpenSans-Bold";
+        else if (cell.style.font?.italic) font = "OpenSans-Italic";
         tempDoc.font(font).fontSize(size);
         const textWidth = tempDoc.widthOfString(text) + padding + extraSpace;
 
@@ -170,22 +191,8 @@ export async function convertExcelToPdf(
     const doc = new PDFDocument({
       size: enablePagination ? "letter" : [pageWidth, pageHeight],
       margin,
-      font: null,
     });
-    const fonts = {
-      Helvetica: {
-        normal: "Helvetica",
-        bold: "Helvetica-Bold",
-        italic: "Helvetica-Oblique",
-        bolditalic: "Helvetica-BoldOblique",
-      },
-    };
-    doc.registerFont("Helvetica", fonts.Helvetica.normal);
-    doc.registerFont("Helvetica-Bold", fonts.Helvetica.bold);
-    doc.registerFont("Helvetica-Oblique", fonts.Helvetica.italic);
-    doc.registerFont("Helvetica-BoldOblique", fonts.Helvetica.bolditalic);
-    doc.font("Helvetica");
-    
+
     doc.pipe(fs.createWriteStream(outputFileName));
 
     // Draw images first

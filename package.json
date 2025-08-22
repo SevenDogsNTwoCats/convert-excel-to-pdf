@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
-    "jspdf": "^3.0.1",
-    "pdfkit": "^0.14.0"
+    "jspdf": "^3.0.1"
   }
 }

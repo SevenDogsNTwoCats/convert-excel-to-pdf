@@ -165,25 +165,41 @@ export async function convertExcelToPdf(
     let pageWidth = tableWidth + margin * 2;
     let pageHeight = tableHeight + margin * 2 + 40;
     
-    // jsPDF limit is 14400 units - handle large documents with pagination
+    // jsPDF limit is 14400 units - handle large documents intelligently
     const MAX_SIZE = 14400;
     let scaleFactor = 1;
     
     if (pageWidth > MAX_SIZE || pageHeight > MAX_SIZE) {
-      if (!enablePagination) {
-        // If pagination is disabled, force enable it for large documents
-        console.warn('Document too large for single page, enabling pagination automatically');
+      if (pageHeight > MAX_SIZE && !enablePagination) {
+        // If height exceeds limit, enable pagination and use ideal table width
+        console.warn('Document height too large, enabling pagination automatically');
         enablePagination = true;
-        // Use standard page sizes
-        pageWidth = 612; // Letter width in points
+        
+        // Keep the ideal table width (up to MAX_SIZE) for better readability
+        if (pageWidth > MAX_SIZE) {
+          pageWidth = MAX_SIZE;
+          console.log(`Table width capped at ${MAX_SIZE} units for jsPDF compatibility`);
+        }
+        
+        // Use standard letter height for pagination
         pageHeight = 792; // Letter height in points
-      } else {
-        // If pagination is already enabled, use standard letter size
-        pageWidth = 612;
-        pageHeight = 792;
+        
+      } else if (pageWidth > MAX_SIZE && pageHeight <= MAX_SIZE && !enablePagination) {
+        // If only width exceeds limit, cap it at MAX_SIZE
+        pageWidth = MAX_SIZE;
+        console.log(`Table width capped at ${MAX_SIZE} units for jsPDF compatibility`);
+        
+      } else if (enablePagination) {
+        // If pagination is already enabled, use standard letter size for height
+        // but preserve table width up to MAX_SIZE
+        if (pageWidth > MAX_SIZE) {
+          pageWidth = MAX_SIZE;
+          console.log(`Table width capped at ${MAX_SIZE} units for jsPDF compatibility`);
+        }
+        pageHeight = 792; // Letter height in points
       }
       
-      console.log(`Using pagination for large document. Page size: ${pageWidth}x${pageHeight}`);
+      console.log(`Final page dimensions: ${pageWidth}x${pageHeight}`);
     }
 
     // Extract images from worksheet
@@ -202,7 +218,7 @@ export async function convertExcelToPdf(
     const doc = new jsPDF({
       orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
       unit: 'pt',
-      format: enablePagination ? 'letter' : [pageWidth, pageHeight]
+      format: [pageWidth, pageHeight]
     });
 
     // Draw images first (jsPDF has limited image support)

@@ -115,8 +115,8 @@ export async function convertExcelToPdf(
     });
 
     // Calculate dynamic table and page dimensions
-    const defaultFontSize = 12;
-    const rowHeight = 20;
+    const defaultFontSize = 11;
+    const rowHeight = 25;
     const tempDoc = new PDFDocument({ margin: 0 });
     const padding = 10;
     const extraSpace = 10;
@@ -192,6 +192,13 @@ export async function convertExcelToPdf(
       size: enablePagination ? "letter" : [pageWidth, pageHeight],
       margin,
     });
+
+    if (fs.existsSync(fonts.OpenSans.normal)) {
+      doc.registerFont("OpenSans", fonts.OpenSans.normal);
+      doc.registerFont("OpenSans-Bold", fonts.OpenSans.bold);
+      doc.registerFont("OpenSans-Italic", fonts.OpenSans.italic);
+      doc.registerFont("OpenSans-BoldItalic", fonts.OpenSans.bolditalic);
+    }
 
     doc.pipe(fs.createWriteStream(outputFileName));
 
@@ -274,15 +281,15 @@ export async function convertExcelToPdf(
           if (cell.style.font) {
             const { size, color, bold, italic } = cell.style.font;
             if (size) doc.fontSize(size);
-            if (bold) doc.font("Helvetica-Bold");
-            if (italic) doc.font("Helvetica-Oblique");
+            if (bold) doc.font("OpenSans-Bold");
+            if (italic) doc.font("OpenSans-Italic");
             if (color && color.argb) doc.fillColor(`#${color.argb.slice(2)}`);
             else doc.fillColor("black");
           } else {
-            doc.font("Helvetica").fontSize(12).fillColor("black");
+            doc.font("OpenSans").fontSize(11).fillColor("black");
           }
-          const fontSize = cell.style.font?.size || 12;
-          const dynamicYOffset = (mergedHeight - fontSize) / 2;
+          const fontSize = cell.style.font?.size || 11;
+          const dynamicYOffset = (mergedHeight - fontSize - 10) / 2;
 
           // Adjust vertical position of text using dynamicYOffset
           doc.text(cell.text, x + 2, y + dynamicYOffset, {
@@ -315,14 +322,14 @@ export async function convertExcelToPdf(
           if (cell.style.font) {
             const { size, color, bold, italic } = cell.style.font;
             if (size) doc.fontSize(size);
-            if (bold) doc.font("Helvetica-Bold");
-            if (italic) doc.font("Helvetica-Oblique");
+            if (bold) doc.font("OpenSans-Bold");
+            if (italic) doc.font("OpenSans-Italic");
             if (color && color.argb) doc.fillColor(`#${color.argb.slice(2)}`);
             else doc.fillColor("black");
           } else {
-            doc.font("Helvetica").fontSize(12).fillColor("black");
+            doc.font("OpenSans").fontSize(11).fillColor("black");
           }
-          const fontSize = cell.style.font?.size || 12;
+          const fontSize = cell.style.font?.size || 11;
           const dynamicYOffset = (fontSize * 1) / 2;
 
           // Adjust vertical position of text using dynamicYOffset

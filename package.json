@@ -1,12 +1,12 @@
 {
   "name": "excel-to-pdf-converter",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Convert you xlsx to pdf",
   "main": "src/lib/excel-to-pdf.js",
   "types": "src/types/index.d.ts",
   "keywords": [
     "excel",
-    "pdf", 
+    "pdf",
     "converter",
     "xlsx",
     "library",
@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
+    "jspdf": "^3.0.1",
     "pdfkit": "^0.14.0"
   }
 }

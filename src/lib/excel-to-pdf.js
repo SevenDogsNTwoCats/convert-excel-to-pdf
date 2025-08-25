@@ -6,6 +6,7 @@ import { jsPDF } from "jspdf";
 import { drawBorders } from "./utils/draw-borders.js";
 import { encodeCell } from "./utils/encodeCell.js";
 import { decodeCell } from "./utils/decodeCell.js";
+import { extractCellText } from "./utils/extractCellText.js";
 
 /**
  * Converts an Excel file to a PDF document.
@@ -16,7 +17,8 @@ import { decodeCell } from "./utils/decodeCell.js";
 export async function convertExcelToPdf(
   inputFilePath,
   outputFileName,
-  enablePagination = false
+  enablePagination = false,
+  fixedAt = 2
 ) {
   // Check if file exists
   if (!fs.existsSync(inputFilePath)) {
@@ -31,6 +33,13 @@ export async function convertExcelToPdf(
     await workbook.xlsx.readFile(inputFilePath);
 
     const worksheet = workbook.getWorksheet(1);
+
+    // Try to calculate formulas (this might help with some formula results)
+    try {
+      await workbook.calcNow();
+    } catch (calcError) {
+      console.warn('Could not calculate formulas:', calcError.message);
+    }
 
     // Process data as before
     const styledRows = [];
@@ -77,12 +86,8 @@ export async function convertExcelToPdf(
         }
         // Only process the main cell of the merge
         let cell = row.getCell(colNumber);
-        let text =
-          cell.value != null
-            ? typeof cell.value === "object"
-              ? ""
-              : String(cell.value)
-            : "";
+        let text = extractCellText(cell, fixedAt);
+        
         let style = cell.style || {};
         let mergeInfo = null;
         if (mergeMap[key]) {

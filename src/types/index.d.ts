@@ -1,13 +1,26 @@
-declare module 'excel-to-pdf-converter' {
+declare module "excel-to-pdf-converter" {
   /**
-   * Converts an Excel file to a PDF document
-   * @param inputFilePath Path to the input Excel file
-   * @param outputFileName Path for the output PDF file
-   * @param enablePagination Whether to enable pagination (default: false)
+   * Converts an Excel file to a PDF document.
+   * @param {string} inputFilePath Path to the input Excel file.
+   * @param {string} outputFilePath Name of the output PDF file.
+   * @param {boolean} enablePagination Whether to enable pagination (default: false)
+   * @param {number} MAX_WIDTH_SIZE Maximum width size for the PDF (default: 14400)
+   * @param {number} MAX_HEIGHT_SIZE Maximum height size for the PDF (default: 14400)
+   * @param {number} MIN_WIDTH_SIZE Minimum width size for the PDF (default: 300)
+   * @param {number} MIN_HEIGHT_SIZE Minimum height size for the PDF (default: 300)
+   * @param {boolean} useMinLimit Whether to enforce minimum size limits (default: false)
+   * @param {number} fixedAt Number of decimal places for numeric formatting (default: 2)
    */
   export function convertExcelToPdf(
     inputFilePath: string,
-    outputFileName: string,
-    enablePagination?: boolean
+    outputFilePath: string,
+    enablePagination?: boolean,
+    MAX_WIDTH_SIZE?: number,
+    MAX_HEIGHT_SIZE?: number,
+    MIN_WIDTH_SIZE?: number,
+    MIN_HEIGHT_SIZE?: number,
+    useMinLimit?: boolean,
+    fixedAt?: number
   ): Promise<void>;
+
 }

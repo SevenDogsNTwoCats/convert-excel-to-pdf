@@ -11,15 +11,28 @@ import { extractCellText } from "./utils/extractCellText.js";
 /**
  * Converts an Excel file to a PDF document.
  * @param {string} inputFilePath Path to the input Excel file.
- * @param {string} outputFileName Name of the output PDF file.
+ * @param {string} outputFilePath Name of the output PDF file.
  * @param {boolean} enablePagination Whether to enable pagination (default: false)
+ * @param {number} MAX_WIDTH_SIZE Maximum width size for the PDF (default: 14400)
+ * @param {number} MAX_HEIGHT_SIZE Maximum height size for the PDF (default: 14400)
+ * @param {number} MIN_WIDTH_SIZE Minimum width size for the PDF (default: 300)
+ * @param {number} MIN_HEIGHT_SIZE Minimum height size for the PDF (default: 300)
+ * @param {boolean} useMinLimit Whether to enforce minimum size limits (default: false)
+ * @param {number} fixedAt Number of decimal places for numeric formatting (default: 2)
  */
-export async function convertExcelToPdf(
+export async function convertExcelToPdf({
   inputFilePath,
-  outputFileName,
+  outputFilePath,
   enablePagination = false,
-  fixedAt = 2
-) {
+  MAX_WIDTH_SIZE = 14400,
+  MAX_HEIGHT_SIZE = 14400,
+  // letter width in points
+  MIN_WIDTH_SIZE = 612,
+  // letter height in points
+  MIN_HEIGHT_SIZE = 792,
+  useMinLimit = false,
+  fixedAt = 2,
+}) {
   // Check if file exists
   if (!fs.existsSync(inputFilePath)) {
     throw new Error(`Error: The file "${inputFilePath}" was not found.`);
@@ -80,7 +93,7 @@ export async function convertExcelToPdf(
         // Only process the main cell of the merge
         let cell = row.getCell(colNumber);
         let text = extractCellText(cell, fixedAt);
-        
+
         let style = cell.style || {};
         let mergeInfo = null;
         if (mergeMap[key]) {
@@ -103,8 +116,8 @@ export async function convertExcelToPdf(
     let rowHeight = 20; // Make it let so we can scale it later
     // Create temporary jsPDF instance for text width calculation
     const tempDoc = new jsPDF({
-      unit: 'pt',
-      format: 'a4'
+      unit: "pt",
+      format: "a4",
     });
     const padding = 10;
     const extraSpace = 10;
@@ -127,7 +140,7 @@ export async function convertExcelToPdf(
         } else if (cell.style.font?.italic) {
           fontStyle = "italic";
         }
-        
+
         tempDoc.setFont("helvetica", fontStyle);
         tempDoc.setFontSize(size);
         const textWidth = tempDoc.getTextWidth(text) + padding + extraSpace;
@@ -162,41 +175,62 @@ export async function convertExcelToPdf(
     const margin = 50;
     let pageWidth = tableWidth + margin * 2;
     let pageHeight = tableHeight + margin * 2 + 40;
-    
-    // jsPDF limit is 14400 units - handle large documents intelligently
-    const MAX_SIZE = 14400;
-    let scaleFactor = 1;
-    
-    if (pageWidth > MAX_SIZE || pageHeight > MAX_SIZE) {
-      if (pageHeight > MAX_SIZE && !enablePagination) {
+
+    // Apply minimum limits if requested
+    if (useMinLimit) {
+      if (pageWidth < MIN_WIDTH_SIZE) {
+        pageWidth = MIN_WIDTH_SIZE;
+        console.log(`Page width increased to minimum: ${MIN_WIDTH_SIZE} units`);
+      }
+      if (pageHeight < MIN_HEIGHT_SIZE) {
+        pageHeight = MIN_HEIGHT_SIZE;
+        console.log(
+          `Page height increased to minimum: ${MIN_HEIGHT_SIZE} units`
+        );
+      }
+    }
+
+    // Apply maximum limits - handle large documents intelligently
+    if (pageWidth > MAX_WIDTH_SIZE || pageHeight > MAX_HEIGHT_SIZE) {
+      if (pageHeight > MAX_HEIGHT_SIZE && !enablePagination) {
         // If height exceeds limit, enable pagination and use ideal table width
-        console.warn('Document height too large, enabling pagination automatically');
+        console.warn(
+          "Document height too large, enabling pagination automatically"
+        );
         enablePagination = true;
-        
-        // Keep the ideal table width (up to MAX_SIZE) for better readability
-        if (pageWidth > MAX_SIZE) {
-          pageWidth = MAX_SIZE;
-          console.log(`Table width capped at ${MAX_SIZE} units for jsPDF compatibility`);
+
+        // Keep the ideal table width (up to MAX_WIDTH_SIZE) for better readability
+        if (pageWidth > MAX_WIDTH_SIZE) {
+          pageWidth = MAX_WIDTH_SIZE;
+          console.log(
+            `Table width capped at ${MAX_WIDTH_SIZE} units for jsPDF compatibility`
+          );
         }
-        
+
         // Use standard letter height for pagination
-        pageHeight = 792; // Letter height in points
-        
-      } else if (pageWidth > MAX_SIZE && pageHeight <= MAX_SIZE && !enablePagination) {
-        // If only width exceeds limit, cap it at MAX_SIZE
-        pageWidth = MAX_SIZE;
-        console.log(`Table width capped at ${MAX_SIZE} units for jsPDF compatibility`);
-        
+        pageHeight = MIN_HEIGHT_SIZE;
+      } else if (
+        pageWidth > MAX_WIDTH_SIZE &&
+        pageHeight <= MAX_HEIGHT_SIZE &&
+        !enablePagination
+      ) {
+        // If only width exceeds limit, cap it at MAX_WIDTH_SIZE
+        pageWidth = MAX_WIDTH_SIZE;
+        console.log(
+          `Table width capped at ${MAX_WIDTH_SIZE} units for jsPDF compatibility`
+        );
       } else if (enablePagination) {
         // If pagination is already enabled, use standard letter size for height
-        // but preserve table width up to MAX_SIZE
-        if (pageWidth > MAX_SIZE) {
-          pageWidth = MAX_SIZE;
-          console.log(`Table width capped at ${MAX_SIZE} units for jsPDF compatibility`);
+        // but preserve table width up to MAX_WIDTH_SIZE
+        if (pageWidth > MAX_WIDTH_SIZE) {
+          pageWidth = MAX_WIDTH_SIZE;
+          console.log(
+            `Table width capped at ${MAX_WIDTH_SIZE} units for jsPDF compatibility`
+          );
         }
-        pageHeight = 792; // Letter height in points
+        pageHeight = MIN_HEIGHT_SIZE;
       }
-      
+
       console.log(`Final page dimensions: ${pageWidth}x${pageHeight}`);
     }
 
@@ -214,9 +248,9 @@ export async function convertExcelToPdf(
 
     // Generate PDF with dynamic size
     const doc = new jsPDF({
-      orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
-      unit: 'pt',
-      format: [pageWidth, pageHeight]
+      orientation: pageWidth > pageHeight ? "landscape" : "portrait",
+      unit: "pt",
+      format: [pageWidth, pageHeight],
     });
 
     // Draw images first (jsPDF has limited image support)
@@ -230,14 +264,14 @@ export async function convertExcelToPdf(
         const ptsPerPx = 0.75;
         const imgWidthPts = (ext?.width || 0) * ptsPerPx;
         const imgHeightPts = (ext?.height || 0) * ptsPerPx;
-        
+
         // Convert buffer to base64 for jsPDF
-        const base64String = buffer.toString('base64');
+        const base64String = buffer.toString("base64");
         const dataURL = `data:image/png;base64,${base64String}`;
-        
-        doc.addImage(dataURL, 'PNG', imgX, imgY, imgWidthPts, imgHeightPts);
+
+        doc.addImage(dataURL, "PNG", imgX, imgY, imgWidthPts, imgHeightPts);
       } catch (imageError) {
-        console.warn('Could not add image:', imageError.message);
+        console.warn("Could not add image:", imageError.message);
       }
     });
 
@@ -298,37 +332,37 @@ export async function convertExcelToPdf(
           ) {
             const hex = cell.style.fill.fgColor.argb.slice(2);
             doc.setFillColor(`#${hex}`);
-            doc.rect(x, y, mergedWidth, mergedHeight, 'F');
+            doc.rect(x, y, mergedWidth, mergedHeight, "F");
           }
 
           // Font and text configuration
           const fontSize = cell.style.font?.size || 12;
           const isBold = cell.style.font?.bold;
           const isItalic = cell.style.font?.italic;
-          
-          let fontStyle = 'normal';
-          if (isBold && isItalic) fontStyle = 'bolditalic';
-          else if (isBold) fontStyle = 'bold';
-          else if (isItalic) fontStyle = 'italic';
-          
-          doc.setFont('helvetica', fontStyle);
+
+          let fontStyle = "normal";
+          if (isBold && isItalic) fontStyle = "bolditalic";
+          else if (isBold) fontStyle = "bold";
+          else if (isItalic) fontStyle = "italic";
+
+          doc.setFont("helvetica", fontStyle);
           doc.setFontSize(fontSize);
 
           // Text color
-          const textColor = cell.style.font?.color?.argb 
-            ? `#${cell.style.font.color.argb.slice(2)}` 
-            : '#000000';
+          const textColor = cell.style.font?.color?.argb
+            ? `#${cell.style.font.color.argb.slice(2)}`
+            : "#000000";
           doc.setTextColor(textColor);
 
           // Text positioning and alignment
-          const text = cell.text || '';
-          const align = cell.style.alignment?.horizontal || 'left';
+          const text = cell.text || "";
+          const align = cell.style.alignment?.horizontal || "left";
           const textY = y + mergedHeight / 2 + fontSize / 3; // Centered vertically
 
-          if (align === 'center') {
-            doc.text(text, x + mergedWidth / 2, textY, { align: 'center' });
-          } else if (align === 'right') {
-            doc.text(text, x + mergedWidth - 2, textY, { align: 'right' });
+          if (align === "center") {
+            doc.text(text, x + mergedWidth / 2, textY, { align: "center" });
+          } else if (align === "right") {
+            doc.text(text, x + mergedWidth - 2, textY, { align: "right" });
           } else {
             doc.text(text, x + 2, textY);
           }
@@ -351,37 +385,37 @@ export async function convertExcelToPdf(
           ) {
             const hex = cell.style.fill.fgColor.argb.slice(2);
             doc.setFillColor(`#${hex}`);
-            doc.rect(x, y, cellWidth, rowHeight, 'F');
+            doc.rect(x, y, cellWidth, rowHeight, "F");
           }
 
           // Font and text configuration
           const fontSize = cell.style.font?.size || 12;
           const isBold = cell.style.font?.bold;
           const isItalic = cell.style.font?.italic;
-          
-          let fontStyle = 'normal';
-          if (isBold && isItalic) fontStyle = 'bolditalic';
-          else if (isBold) fontStyle = 'bold';
-          else if (isItalic) fontStyle = 'italic';
-          
-          doc.setFont('helvetica', fontStyle);
+
+          let fontStyle = "normal";
+          if (isBold && isItalic) fontStyle = "bolditalic";
+          else if (isBold) fontStyle = "bold";
+          else if (isItalic) fontStyle = "italic";
+
+          doc.setFont("helvetica", fontStyle);
           doc.setFontSize(fontSize);
 
           // Text color
-          const textColor = cell.style.font?.color?.argb 
-            ? `#${cell.style.font.color.argb.slice(2)}` 
-            : '#000000';
+          const textColor = cell.style.font?.color?.argb
+            ? `#${cell.style.font.color.argb.slice(2)}`
+            : "#000000";
           doc.setTextColor(textColor);
 
           // Text positioning and alignment
-          const text = cell.text || '';
-          const align = cell.style.alignment?.horizontal || 'left';
+          const text = cell.text || "";
+          const align = cell.style.alignment?.horizontal || "left";
           const textY = y + rowHeight / 2 + fontSize / 3; // Centered vertically
 
-          if (align === 'center') {
-            doc.text(text, x + cellWidth / 2, textY, { align: 'center' });
-          } else if (align === 'right') {
-            doc.text(text, x + cellWidth - 2, textY, { align: 'right' });
+          if (align === "center") {
+            doc.text(text, x + cellWidth / 2, textY, { align: "center" });
+          } else if (align === "right") {
+            doc.text(text, x + cellWidth - 2, textY, { align: "right" });
           } else {
             doc.text(text, x + 2, textY);
           }
@@ -398,7 +432,7 @@ export async function convertExcelToPdf(
     });
 
     // Save PDF
-    doc.save(outputFileName);
+    doc.save(outputFilePath);
   } catch (error) {
     throw new Error(`Error processing Excel file: ${error.message}`);
   }

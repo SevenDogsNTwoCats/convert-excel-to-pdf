@@ -26,10 +26,10 @@ await convertExcelToPdf('path/to/file.xlsx', 'path/to/output.pdf');
 
 ## API
 
-### convertExcelToPdf(inputFilePath, outputFileName)
+### convertExcelToPdf(inputFilePath, outputFilePath)
 Converts an Excel file (.xlsx) to PDF.
 - `inputFilePath`: Path to the input Excel file
-- `outputFileName`: Path and name for the output PDF file
+- `outputFilePath`: Path and name for the output PDF file
 
 ## Examples
 

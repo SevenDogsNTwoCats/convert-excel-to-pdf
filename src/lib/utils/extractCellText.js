@@ -9,12 +9,6 @@ export function extractCellText(cell, fixedAt = 2) {
     return "";
   }
 
-  // First, check if the cell has a calculated text representation
-  // This is often the most accurate representation of what Excel shows
-  if (cell.text && cell.text !== "") {
-    return cell.text;
-  }
-
   // Handle object values (richText, formulas, etc.)
   if (typeof cell.value === "object") {
     // Handle formulas with calculated results
@@ -67,12 +61,21 @@ export function extractCellText(cell, fixedAt = 2) {
         return `#${cell.value.error.toUpperCase()}`;
       }
       
+      // Use cell.text if available for formulas (often contains calculated value)
+      if (cell.text && cell.text !== "") {
+        return cell.text;
+      }
+      
       // If no result available, show the formula
       return `=${cell.value.formula}`;
     }
     
     // Handle shared formulas without results
     if (cell.value.sharedFormula) {
+      // Use cell.text if available
+      if (cell.text && cell.text !== "") {
+        return cell.text;
+      }
       // Try to show a placeholder or the formula reference
       return "0"; // Default value for unresolved shared formulas
     }
@@ -98,9 +101,12 @@ export function extractCellText(cell, fixedAt = 2) {
         return cell.value.toFixed(decimalPlaces);
       }
       
-      // Check if the cell's text representation shows decimals
+      // Check if cell.text shows decimals but preserve our decimal formatting logic
       if (cell.text && cell.text.includes('.')) {
-        return cell.text;
+        // Use cell.text but only if it's reasonable (not a formula display)
+        if (!cell.text.startsWith('=') && !cell.text.includes('(')) {
+          return cell.text;
+        }
       }
       
       // For numbers with natural decimals, preserve them
@@ -113,6 +119,11 @@ export function extractCellText(cell, fixedAt = 2) {
     } catch (e) {
       return String(cell.value);
     }
+  }
+
+  // Check cell.text for other types (like dates, strings with special formatting)
+  if (cell.text && cell.text !== "") {
+    return cell.text;
   }
 
   // Handle all other types (strings, booleans, dates, etc.)

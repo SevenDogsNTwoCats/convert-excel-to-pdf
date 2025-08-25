@@ -34,13 +34,6 @@ export async function convertExcelToPdf(
 
     const worksheet = workbook.getWorksheet(1);
 
-    // Try to calculate formulas (this might help with some formula results)
-    try {
-      await workbook.calcNow();
-    } catch (calcError) {
-      console.warn('Could not calculate formulas:', calcError.message);
-    }
-
     // Process data as before
     const styledRows = [];
     const totalRows = worksheet.rowCount;

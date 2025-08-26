@@ -1,8 +1,13 @@
 {
   "name": "excel-to-pdf-converter",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "description": "Convert you xlsx to pdf",
-  "main": "src/lib/excel-to-pdf.js",
+  "main": "dist/excel-to-pdf.js",
+  "exports": {
+    ".": {
+      "import": "./dist/excel-to-pdf.js"
+    }
+  },
   "types": "src/types/index.d.ts",
   "keywords": [
     "excel",
@@ -25,10 +30,17 @@
     "README.md"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build.js",
+    "build:prod": "NODE_ENV=production node build.js",
+    "build:watch": "node build.js --watch",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
     "jspdf": "^3.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
   }
 }
